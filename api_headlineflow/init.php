@@ -1,10 +1,10 @@
 <?php
 /*
- * This plugin adds API-calls used by News+ in order to
+ * This plugin adds API-calls used by Headline Flow in order to
  * support two-way synchronization in a way compatible
- * to News+ internal structure.
+ * to Headline Flow internal structure.
  */
-class Api_newsplus extends Plugin {
+class Api_headlineflow extends Plugin {
 
 	private $host;
 
@@ -13,10 +13,10 @@ class Api_newsplus extends Plugin {
 	 */
 	function about() {
 		return array(1.1
-			, "API plugin for News+"
+			, "API plugin for Headline Flow"
 			, "hrk"
 			, true // Must be a system plugin to add an API.
-			, "http://github.com/hrk/tt-rss-newsplus-plugin/"
+			, "http://github.com/hrk/tt-rss-headlineflow-plugin/"
 			);
 	}
 

@@ -1,47 +1,68 @@
-# TT-RSS News+ plugin
+# TT-RSS Headline Flow Plugin
 
-This is a plugin for [Tiny-Tiny-RSS](http://tt-rss.org) web based news feed reader and aggregator.
+Plugin for [Tiny Tiny RSS](http://tt-rss.org), a web-based news feed reader and aggregator.
 
-It adds a new API (getCompactHeadlines) to allow (faster) two-way synchronzation between an instance of TT-RSS and the [News+](http://github.com/noinnion/newsplus/) Android app.
+## Project Lineage
 
-The plugin requires (at least) version 1.8 of Tiny-Tiny-RSS.
+This repository is a fork of:
+https://github.com/hrk/tt-rss-newsplus-plugin/tree/master
 
-## API Reference
+This project is a newer successor to News+.
 
-**getCompactHeadlines**
+## What It Adds
 
-Returns a JSON-encoded list of IDs of headlines matching the input parameters.
+The plugin adds the `getCompactHeadlines` API method to support faster two-way synchronization between TT-RSS and the [Headline Flow](http://github.com/noinnion/headlineflow/) Android app.
 
-Parameters:
- * feed_id (integer/string) - only output articles for this feed (see below)
- * limit (integer) - limits the amount of returned articles (see below)
- * skip (integer) - skip this amount of feeds first
- * view_mode (string = all_articles, unread, adaptive, marked, updated)
- * since_id (integer) - only return articles with id greater than since_id
+## Compatibility
 
-Notes:
- * *Limit*: contrary to the standard **getHeadlines** API call, there is no hardcoded limit. If not specified, the default is set to 20.
- * *feed_id*: feeds between -10 and 0 have a special meaning.
-  * 0: archived
-  * -1: starred
-  * -2: published
-  * -3: fresh
-  * -4: all articles
-  * -6: recently read
-  * IDs < -10: labels
-  * textual feed_id: browsing by tags
+- Requires Tiny Tiny RSS 1.8 or newer.
+- Plugin directory name: `api_headlineflow`
+- System plugin name to enable: `api_headlineflow`
 
 ## Installation
 
-To install this plugin you can either clone the repository or download a zip file, then extract it in your own tt-rss/plugin/ directory.
+1. Clone this repository (or download and extract it) into your TT-RSS `plugins/` directory.
+2. Confirm you have `plugins/api_headlineflow/`.
 
-You should have a new "api_newsplus" directory under plugins.
+## Configuration
 
-#### Configuration for a single user
-Log-in to your TT-RSS instance and go into the preferences. Scroll to plugins and enable "api_newsplus". It will be listed under the *system* plugins.
+### Single User
 
-#### Automatic configuration for every user
-Edit your config.php and add "api_newsplus" to the list of system plugins. It will be automatically enabled for every user.
+1. Log in to your TT-RSS instance.
+2. Open Preferences.
+3. Scroll to plugins and enable `api_headlineflow` (listed under system plugins).
+
+### All Users
+
+Edit `config.php` and add `api_headlineflow` to the list of system plugins so it is enabled for every user.
+
+## API Reference
+
+### `getCompactHeadlines`
+
+Returns a JSON-encoded list of headline IDs matching the input parameters.
+
+Parameters:
+
+- `feed_id` (integer/string): Only output articles for this feed (see feed ID notes below).
+- `limit` (integer): Limits the number of returned articles.
+- `skip` (integer): Skips this number of articles first.
+- `view_mode` (string): One of `all_articles`, `unread`, `adaptive`, `marked`, `updated`.
+- `since_id` (integer): Only returns articles with an ID greater than this value.
+
+Notes:
+
+- `limit`: Unlike the standard `getHeadlines` API call, there is no hardcoded limit. Default is `20`.
+- `feed_id`: Values between `-10` and `0` have special meanings:
+  - `0`: archived
+  - `-1`: starred
+  - `-2`: published
+  - `-3`: fresh
+  - `-4`: all articles
+  - `-6`: recently read
+  - IDs `< -10`: labels
+  - Textual `feed_id`: browsing by tags
 
 ## License
-This code is licensed under GPLv3. Although I am not a personal fan of the v3, since this code was built upon the existing source of TT-RSS, it inherits the same license.
+
+This code is licensed under GPLv3 and inherits the same license as TT-RSS source code it was built upon.
