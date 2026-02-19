@@ -11,7 +11,13 @@ This project is a newer successor to News+.
 
 ## What It Adds
 
-The plugin adds the `getCompactHeadlines` API method to support faster two-way synchronization between TT-RSS and the [Headline Flow](http://github.com/noinnion/headlineflow/) Android app.
+The plugin adds custom API methods used by [Headline Flow](http://github.com/noinnion/headlineflow/) for synchronization and feed management:
+
+- `headlineflowGetCompactHeadlines`
+- `headlineflowUpdateCategory`
+- `headlineflowAddCategory`
+- `headlineflowRemoveCategory`
+- `headlineflowUpdateFeedCategory`
 
 ## Compatibility
 
@@ -38,7 +44,7 @@ Edit `config.php` and add `api_headlineflow` to the list of system plugins so it
 
 ## API Reference
 
-### `getCompactHeadlines`
+### `headlineflowGetCompactHeadlines`
 
 Returns a JSON-encoded list of headline IDs matching the input parameters.
 
@@ -62,6 +68,42 @@ Notes:
   - `-6`: recently read
   - IDs `< -10`: labels
   - Textual `feed_id`: browsing by tags
+
+### `headlineflowUpdateCategory`
+
+Updates an existing feed category.
+
+Parameters:
+
+- `category_id` (integer): Existing category ID.
+- `title` (string): New category title.
+- `parent_category_id` (integer, optional): New parent category ID. Use `0` for root.
+
+### `headlineflowAddCategory`
+
+Creates a feed category.
+
+Parameters:
+
+- `title` (string): Category title.
+- `parent_category_id` (integer, optional): Parent category ID. Use `0` for root.
+
+### `headlineflowRemoveCategory`
+
+Removes an existing feed category.
+
+Parameters:
+
+- `category_id` (integer): Existing category ID.
+
+### `headlineflowUpdateFeedCategory`
+
+Updates category assignment for an existing feed.
+
+Parameters:
+
+- `feed_id` (integer): Existing feed ID.
+- `category_id` (integer): Target category ID. Use `0` to move the feed to uncategorized.
 
 ## License
 

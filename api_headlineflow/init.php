@@ -33,13 +33,17 @@ class Api_headlineflow extends Plugin {
 	function init($host) {
 		$this->host = $host;
 
-		$this->host->add_api_method("getCompactHeadlines", $this);
+		$this->host->add_api_method("headlineflowGetCompactHeadlines", $this);
+		$this->host->add_api_method("headlineflowUpdateCategory", $this);
+		$this->host->add_api_method("headlineflowAddCategory", $this);
+		$this->host->add_api_method("headlineflowRemoveCategory", $this);
+		$this->host->add_api_method("headlineflowUpdateFeedCategory", $this);
 	}
 
 	/**
 	 * Our own API.
 	 */
-	function getCompactHeadlines() {
+	function headlineflowGetCompactHeadlines() {
 		$feed_id = clean($_REQUEST["feed_id"]);
 		if ($feed_id != "") {
 			$limit = (int) clean($_REQUEST["limit"] ?? 0);
@@ -55,6 +59,156 @@ class Api_headlineflow extends Plugin {
 			return array(API::STATUS_ERR, array("error" => 'INCORRECT_USAGE'));
 		} // end-if: $feed_if != ""
 	} // end-function
+
+	/**
+	 * Category APIs.
+	 */
+	function headlineflowAddCategory() {
+		$title = trim(clean($_REQUEST["title"] ?? ''));
+		$parent_category_id = (int) clean($_REQUEST["parent_category_id"] ?? ($_REQUEST["parent_cat_id"] ?? 0));
+		$owner_uid = (int) $_SESSION["uid"];
+
+		if ($title == "") {
+			return array(API::STATUS_ERR, array("error" => 'INCORRECT_USAGE'));
+		}
+
+		$parent_cat = $parent_category_id > 0 ? $parent_category_id : null;
+
+		if ($parent_cat && !$this->category_exists($parent_cat, $owner_uid)) {
+			return array(API::STATUS_ERR, array("error" => 'NOT_FOUND'));
+		}
+
+		$created = Feeds::_add_cat($title, $owner_uid, $parent_cat);
+
+		$cat = ORM::for_table('ttrss_feed_categories')
+			->where([
+				'owner_uid' => $owner_uid,
+				'parent_cat' => $parent_cat,
+				'title' => $title
+			])
+			->order_by_desc('id')
+			->find_one();
+
+		$category_id = $cat ? (int) $cat->id : 0;
+
+		return array(API::STATUS_OK, array(
+			"status" => "OK",
+			"category_id" => $category_id,
+			"title" => $title,
+			"created" => (bool) $created
+		));
+	}
+
+	function headlineflowUpdateCategory() {
+		$category_id = (int) clean($_REQUEST["category_id"] ?? 0);
+		$title = trim(clean($_REQUEST["title"] ?? ''));
+		$parent_category_id = (int) clean($_REQUEST["parent_category_id"] ?? ($_REQUEST["parent_cat_id"] ?? -1));
+		$owner_uid = (int) $_SESSION["uid"];
+
+		if ($category_id <= 0 || $title == "") {
+			return array(API::STATUS_ERR, array("error" => 'INCORRECT_USAGE'));
+		}
+
+		if (!$this->category_exists($category_id, $owner_uid)) {
+			return array(API::STATUS_ERR, array("error" => 'NOT_FOUND'));
+		}
+
+		$parent_cat = null;
+		if ($parent_category_id >= 0) {
+			$parent_cat = $parent_category_id > 0 ? $parent_category_id : null;
+			if ($parent_cat && !$this->category_exists($parent_cat, $owner_uid)) {
+				return array(API::STATUS_ERR, array("error" => 'NOT_FOUND'));
+			}
+		} else {
+			$current_sth = $this->pdo->prepare("SELECT parent_cat FROM ttrss_feed_categories
+				WHERE id = ? AND owner_uid = ? LIMIT 1");
+			$current_sth->execute(array($category_id, $owner_uid));
+			$current = $current_sth->fetch();
+			$parent_cat = $current ? $current["parent_cat"] : null;
+		}
+
+		$cat = ORM::for_table('ttrss_feed_categories')
+			->where('owner_uid', $owner_uid)
+			->find_one($category_id);
+
+		if (!$cat) {
+			return array(API::STATUS_ERR, array("error" => 'NOT_FOUND'));
+		}
+
+		$cat->title = $title;
+		$cat->parent_cat = $parent_cat;
+		$cat->save();
+
+		return array(API::STATUS_OK, array(
+			"status" => "OK",
+			"category_id" => $category_id,
+			"title" => $title,
+			"parent_category_id" => $parent_cat
+		));
+	}
+
+	function headlineflowRemoveCategory() {
+		$category_id = (int) clean($_REQUEST["category_id"] ?? 0);
+		$owner_uid = (int) $_SESSION["uid"];
+
+		if ($category_id <= 0) {
+			return array(API::STATUS_ERR, array("error" => 'INCORRECT_USAGE'));
+		}
+
+		if (!$this->category_exists($category_id, $owner_uid)) {
+			return array(API::STATUS_ERR, array("error" => 'NOT_FOUND'));
+		}
+
+		Feeds::_remove_cat($category_id, $owner_uid);
+
+		return array(API::STATUS_OK, array(
+			"status" => "OK",
+			"category_id" => $category_id
+		));
+	}
+
+	private function category_exists($category_id, $owner_uid) {
+		$cat = ORM::for_table('ttrss_feed_categories')
+			->where('owner_uid', (int)$owner_uid)
+			->find_one((int)$category_id);
+		return (bool) $cat;
+	}
+
+	/**
+	 * Move an existing feed to another category.
+	 */
+	function headlineflowUpdateFeedCategory() {
+		$feed_id = (int) clean($_REQUEST["feed_id"] ?? 0);
+		$category_id = (int) clean($_REQUEST["category_id"] ?? ($_REQUEST["cat_id"] ?? 0));
+		$owner_uid = (int) $_SESSION["uid"];
+
+		if ($feed_id <= 0) {
+			return array(API::STATUS_ERR, array("error" => 'INCORRECT_USAGE'));
+		}
+
+		$feed = ORM::for_table('ttrss_feeds')
+			->where('owner_uid', $owner_uid)
+			->find_one($feed_id);
+
+		if (!$feed) {
+			return array(API::STATUS_ERR, array("error" => 'NOT_FOUND'));
+		}
+
+		$cat_id = $category_id > 0 ? $category_id : null;
+
+		if ($cat_id && !$this->category_exists($cat_id, $owner_uid)) {
+			return array(API::STATUS_ERR, array("error" => 'NOT_FOUND'));
+		}
+
+		$feed->cat_id = $cat_id;
+		$feed->save();
+
+		return array(API::STATUS_OK, array(
+			"status" => "OK",
+			"feed_id" => $feed_id,
+			"category_id" => $cat_id
+		));
+	}
 
 	/**
 	 * Private function which builds the result. It is mapped on api_get_headlines in the official API.
