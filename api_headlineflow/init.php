@@ -12,11 +12,11 @@ class Api_headlineflow extends Plugin {
 	 * Plugin interface: about.
 	 */
 	function about() {
-		return array(1.1
+		return array(2.0
 			, "API plugin for Headline Flow"
-			, "hrk"
+			, "powerivq"
 			, true // Must be a system plugin to add an API.
-			, "http://github.com/hrk/tt-rss-headlineflow-plugin/"
+			, "http://github.com/powerivq/ttrss-headlineflow-plugin/"
 			);
 	}
 
